@@ -31,9 +31,11 @@ export default function PlayerController({
   useEffect(() => {
     const down = (e: KeyboardEvent) => { keys.current[e.code] = true }
     const up = (e: KeyboardEvent) => { keys.current[e.code] = false }
+    const onBlur = () => { keys.current = {} }
     window.addEventListener('keydown', down)
     window.addEventListener('keyup', up)
-    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up) }
+    window.addEventListener('blur', onBlur)
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); window.removeEventListener('blur', onBlur) }
   }, [])
 
   useEffect(() => {
@@ -77,7 +79,7 @@ export default function PlayerController({
 
     // sync discrete state to store at ~10Hz (stamina bar, AI reads rig directly)
     lastStoreSync.current += dt
-    if (lastStoreSync.current > 0.1) {
+    if (lastStoreSync.current >= 0.1) {
       lastStoreSync.current = 0
       setStamina(Math.round(stamina.current))
       useGameStore.getState().setPlayerPosition([next[0], next[1], next[2]])
@@ -87,7 +89,7 @@ export default function PlayerController({
   return (
     <PointerLockControls
       onLock={() => { locked.current = true }}
-      onUnlock={() => { locked.current = false }}
+      onUnlock={() => { locked.current = false; keys.current = {} }}
     />
   )
 }

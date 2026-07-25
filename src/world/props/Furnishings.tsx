@@ -59,7 +59,12 @@ export default function Furnishings() {
       <Model name="televisionVintage" placement={P.television} />
       <Model name="bookcaseOpen" placement={P.bookcase} />
       <Model name="lampRoundFloor" placement={P.floorLamp} />
-      <pointLight position={[-1.5, 1.75, 3.65]} intensity={1.8} distance={4} color="#ffd39a" />
+      <pointLight
+        position={[P.floorLamp.position[0], 1.75, P.floorLamp.position[2]]}
+        intensity={1.8}
+        distance={4}
+        color="#ffd39a"
+      />
       <Model name="pottedPlant" placement={P.plant} />
 
       <Model name="kitchenFridge" placement={P.fridge} />

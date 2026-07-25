@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  EXTERIOR,
+  EXTERIOR_WALLS,
   FURNITURE_COLLIDERS,
   getWorldColliders,
   HATCH_POS,
@@ -18,15 +20,45 @@ describe('layout', () => {
   })
   it('spawns outside before entering and has a valid interior destination', () => {
     expect(SPAWN[2]).toBeGreaterThan(ROOMS.entry.bounds.max[2])
+    expect(SPAWN[0]).toBeGreaterThan(EXTERIOR.minX)
+    expect(SPAWN[0]).toBeLessThan(EXTERIOR.maxX)
+    expect(SPAWN[2]).toBeLessThan(EXTERIOR.maxZ)
     const [x, , z] = INTERIOR_SPAWN
     expect(x).toBeGreaterThan(ROOMS.entry.bounds.min[0])
     expect(z).toBeLessThan(ROOMS.entry.bounds.max[2])
   })
-  it('combines walls, solid furniture, moving box and optional front door', () => {
+  it('combines walls, solid furniture, moving box, and a solid front door', () => {
     expect(STATIC_COLLIDERS.length).toBeGreaterThanOrEqual(12)
-    expect(getWorldColliders(false).length).toBe(WALLS.length + STATIC_COLLIDERS.length + 1)
-    expect(getWorldColliders(false, true).length).toBe(getWorldColliders(false).length + 1)
+    // walls + furniture/boxes + heavy box + front door
+    expect(getWorldColliders(false).length).toBe(WALLS.length + STATIC_COLLIDERS.length + 2)
+    expect(getWorldColliders(false, true).length).toBe(
+      getWorldColliders(false).length + EXTERIOR_WALLS.length,
+    )
     expect(getWorldColliders(true)).not.toEqual(getWorldColliders(false))
+  })
+  it('keeps the front door solid after entry', () => {
+    const colliders = getWorldColliders(false, false)
+    const doorBlocked = colliders.some((box) =>
+      7.5 >= box.min[0] && 7.5 <= box.max[0] &&
+      5.6 >= box.min[2] && 5.6 <= box.max[2] &&
+      box.max[1] > 1,
+    )
+    expect(doorBlocked).toBe(true)
+  })
+  it('keeps the intro vestibule fully enclosed', () => {
+    expect(EXTERIOR_WALLS.length).toBe(3)
+    const colliders = getWorldColliders(false, true)
+    const samples: [number, number][] = [
+      [SPAWN[0], EXTERIOR.maxZ + 0.1],
+      [EXTERIOR.minX - 0.1, SPAWN[2]],
+      [EXTERIOR.maxX + 0.1, SPAWN[2]],
+    ]
+    for (const [x, z] of samples) {
+      const blocked = colliders.some((box) =>
+        x >= box.min[0] && x <= box.max[0] && z >= box.min[2] && z <= box.max[2] && box.max[1] > 1,
+      )
+      expect(blocked).toBe(true)
+    }
   })
   it('keeps every chase doorway clear of furniture', () => {
     for (const doorway of Object.values(DOORWAYS)) {

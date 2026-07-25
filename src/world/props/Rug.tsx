@@ -46,8 +46,8 @@ export default function Rug() {
     }
   })
   return (
-    <mesh ref={ref} position={[HATCH_POS[0], 0.025, HATCH_POS[2]]} rotation-x={-Math.PI / 2}>
-      <planeGeometry args={[2.05, 1.8]} />
+    <mesh ref={ref} position={[HATCH_POS[0], 0.09, HATCH_POS[2]]} rotation-x={-Math.PI / 2} renderOrder={2}>
+      <planeGeometry args={[2.45, 2.3]} />
       <primitive object={RUG} attach="material" />
     </mesh>
   )

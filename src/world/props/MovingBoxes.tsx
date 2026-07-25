@@ -7,6 +7,7 @@ import { useInteractable } from '../../systems/interact/InteractSystem'
 import { audio } from '../../systems/audio/AudioManager'
 import { say } from '../../ui/subtitles'
 import { HATCH_POS } from '../layout'
+import { BOX_DESTINATIONS } from '../furniturePlacements'
 import LowPolyModel from '../models/LowPolyModel'
 
 const CARDBOARD = makePSXMaterial({ color: '#8a6f4d' })
@@ -37,11 +38,7 @@ const BOXES: { category: BoxCategory; position: [number, number, number]; copy: 
   { category: 'living', position: [2.7, 0.31, 1.75], copy: 'Books. The living-room shelf is empty.' },
 ]
 
-const DESTINATIONS: Record<BoxCategory, [number, number, number]> = {
-  bedroom: [1.25, 0.66, -4.35],
-  kitchen: [6.3, 1.04, -5.02],
-  living: [-2.6, 0.62, 4.55],
-}
+const DESTINATIONS: Record<BoxCategory, [number, number, number]> = BOX_DESTINATIONS
 
 function MovingBox({ category, position, copy }: (typeof BOXES)[number]) {
   const ref = useRef<THREE.Group>(null)
@@ -97,13 +94,13 @@ function Contents({
         <>
           <LowPolyModel
             url="/models/kenney/kitchenBlender.obj"
-            position={placed ? [-0.45, 0, 0] : [-0.14, 0, 0]}
+            position={placed ? [-0.38, 0, 0.02] : [-0.14, 0, 0]}
             scale={scale}
             materials={ITEM_PALETTE}
           />
           <LowPolyModel
             url="/models/kenney/kitchenCoffeeMachine.obj"
-            position={placed ? [0.45, 0, 0] : [0.14, 0, 0]}
+            position={placed ? [0.4, 0, 0.02] : [0.14, 0, 0]}
             scale={scale}
             materials={ITEM_PALETTE}
           />
@@ -113,15 +110,15 @@ function Contents({
         <>
           <LowPolyModel
             url="/models/kenney/pillow.obj"
-            position={placed ? [-0.4, 0, 0] : [-0.12, 0, 0]}
-            rotation={[0, -0.12, 0]}
+            position={placed ? [-0.35, 0.02, -0.35] : [-0.12, 0, 0]}
+            rotation={[0, -0.2, 0]}
             scale={scale}
             materials={ITEM_PALETTE}
           />
           <LowPolyModel
             url="/models/kenney/pillow.obj"
-            position={placed ? [0.4, 0.03, 0] : [0.12, 0.025, 0]}
-            rotation={[0, 0.16, 0]}
+            position={placed ? [0.35, 0.04, -0.3] : [0.12, 0.025, 0]}
+            rotation={[0, 0.25, 0]}
             scale={scale}
             materials={ITEM_PALETTE}
           />

@@ -16,10 +16,13 @@ const FLOOR_STRIPS: {
   position: [number, number, number]
   size: [number, number]
 }[] = [
-  { position: [3.75, 0, -1.625], size: [13.75, 8] },
-  { position: [3.75, 0, 4.75], size: [13.75, 1.75] },
-  { position: [-2.3, 0, 3.125], size: [1.65, 1.5] },
-  { position: [5.325, 0, 3.125], size: [10.6, 1.5] },
+  // Main apartment floor south of the hatch band
+  { position: [3.75, 0, -1.525], size: [13.75, 8.2] },
+  // Entry/living floor north of the hatch band
+  { position: [3.75, 0, 4.65], size: [13.75, 1.95] },
+  // Fillers around the hatch opening (hole ~1.1 x 1.1 at HATCH_POS)
+  { position: [-2.15, 0, 3.125], size: [1.95, 1.1] },
+  { position: [5.275, 0, 3.125], size: [10.7, 1.1] },
 ]
 
 export default function Apartment() {
@@ -73,18 +76,19 @@ export default function Apartment() {
         <primitive object={CEILING_MATERIAL} attach="material" />
       </mesh>
 
-      <ambientLight intensity={phase === 'title' ? 0.1 : phase === 'chase' ? 0.12 : 0.48} color="#b8aa94" />
+      <ambientLight intensity={phase === 'title' ? 0.1 : 0.48} color="#b8aa94" />
       <pointLight
         position={[0, 2.5, 3.1]}
-        intensity={phase === 'chase' ? 0 : phase === 'title' ? 0.8 : 7}
+        intensity={phase === 'title' ? 0.8 : 7}
         distance={12}
         decay={2}
         color="#ffd9a0"
       />
-      <pointLight position={[7.5, 2.55, -2.6]} intensity={phase === 'chase' ? 0.7 : 4.5} distance={9} decay={2} color="#b9d2e5" />
-      <pointLight position={[1.25, 2.2, -4]} intensity={phase === 'chase' ? 0.35 : 3.2} distance={7} decay={2} color="#e7bd91" />
-      <pointLight position={[-2, 1.7, 3.8]} intensity={phase === 'chase' ? 0 : 2.4} distance={5} color="#ffc77d" />
-      <BathroomLight enabled={phase === 'calm'} />
+      <pointLight position={[7.5, 2.55, -2.6]} intensity={phase === 'title' ? 0.8 : 4.5} distance={9} decay={2} color="#b9d2e5" />
+      <pointLight position={[1.25, 2.2, -4]} intensity={phase === 'title' ? 0.5 : 3.2} distance={7} decay={2} color="#e7bd91" />
+      <pointLight position={[-2, 1.7, 3.8]} intensity={phase === 'title' ? 0.4 : 2.4} distance={5} color="#ffc77d" />
+      <pointLight position={[7.8, 2.3, 3.1]} intensity={phase === 'title' ? 0.35 : 2.2} distance={6} decay={2} color="#e8c9a0" />
+      <BathroomLight enabled={phase === 'calm' || phase === 'chase' || phase === 'intro'} />
     </>
   )
 }

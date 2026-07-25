@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useGameStore } from '../game/store'
 import { advanceObjective } from '../systems/objectives/objectiveChain'
+import { suppressUnlockPause } from '../systems/player/pauseGate'
 import { triggerScare1 } from '../systems/scares/ScareManager'
 import { useUIStore } from './subtitles'
 
@@ -10,6 +11,7 @@ export default function DocumentReader() {
   const close = () => {
     const kind = useUIStore.getState().document
     if (!kind) return
+    suppressUnlockPause(600)
     useUIStore.getState().closeDocument()
     const game = useGameStore.getState()
     if (kind === 'lease' && !game.flags.leaseRead) {
@@ -24,13 +26,21 @@ export default function DocumentReader() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if ((event.code === 'Escape' || event.code === 'KeyE') && !event.repeat && useUIStore.getState().document) {
+      if (!useUIStore.getState().document || event.repeat) return
+      // Esc must not close or fall through to the pause toggle.
+      if (event.code === 'Escape') {
         event.preventDefault()
+        event.stopImmediatePropagation()
+        return
+      }
+      if (event.code === 'KeyE') {
+        event.preventDefault()
+        event.stopImmediatePropagation()
         close()
       }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
   }, [])
 
   if (!document) return null
@@ -40,7 +50,7 @@ export default function DocumentReader() {
         {document === 'lease' && <LeaseCopy />}
         {document === 'notebook' && <NotebookCopy />}
         {document === 'floorplan' && <FloorPlan />}
-        <button autoFocus onClick={close}>Close [E / Esc]</button>
+        <button autoFocus onClick={close}>Close [E]</button>
       </article>
     </div>
   )

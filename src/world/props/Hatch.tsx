@@ -13,6 +13,10 @@ import { HATCH_POS } from '../layout'
 const WOOD = makePSXMaterial({ color: '#49382a', side: THREE.DoubleSide })
 const METAL = makePSXMaterial({ color: '#292724' })
 
+/** Lid is slightly larger than the floor hole so closed edges fully seal. */
+export const HATCH_SIZE = 1.22
+const HATCH_HALF = HATCH_SIZE / 2
+
 export const LADDER_BOTTOM: [number, number, number] = [HATCH_POS[0], -4, HATCH_POS[2] + 0.7]
 export const LADDER_TOP: [number, number, number] = [HATCH_POS[0], 0, HATCH_POS[2] - 0.85]
 
@@ -53,13 +57,13 @@ export default function Hatch() {
     }
   })
   return (
-    <group position={[HATCH_POS[0] - 0.58, -0.075, HATCH_POS[2]]}>
-      <group ref={ref} position={[0.58, 0, 0]}>
+    <group position={[HATCH_POS[0] - HATCH_HALF, -0.02, HATCH_POS[2]]}>
+      <group ref={ref} position={[HATCH_HALF, 0, 0]}>
         <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[1.16, 0.06, 1.16]} />
+          <boxGeometry args={[HATCH_SIZE, 0.06, HATCH_SIZE]} />
           <primitive object={WOOD} attach="material" />
         </mesh>
-        <mesh position={[0.32, 0.07, 0]}>
+        <mesh position={[HATCH_HALF * 0.45, 0.04, 0]}>
           <torusGeometry args={[0.09, 0.018, 5, 10]} />
           <primitive object={METAL} attach="material" />
         </mesh>

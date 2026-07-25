@@ -32,7 +32,8 @@ export const WALLS: AABB[] = [
 export const WALL_MESHES = WALLS.map((box) => ({ box }))
 
 export const SPAWN: [number, number, number] = [7.5, 0, 7.4]
-export const SPAWN_YAW = 0
+/** Start angled left so the landlord is in frame during the intro. */
+export const SPAWN_YAW = 0.55
 export const INTERIOR_SPAWN: [number, number, number] = [7.5, 0, 4.55]
 export const HATCH_POS: [number, number, number] = [-0.625, 0, 3.125]
 export const HATCH_DROP_ZONE: AABB = {
@@ -41,6 +42,21 @@ export const HATCH_DROP_ZONE: AABB = {
 }
 export const FRONT_DOOR_POS: [number, number, number] = [7.5, 0, 5.625]
 export const CEILING_Y = H
+
+/** Closed vestibule outside Unit 4B used during the intro. */
+export const EXTERIOR = {
+  minX: 5.5,
+  maxX: 9.5,
+  minZ: 5.625,
+  maxZ: 8.95,
+  ceilingY: 2.6,
+} as const
+
+export const EXTERIOR_WALLS: AABB[] = [
+  wall(EXTERIOR.minX - T, EXTERIOR.minX, EXTERIOR.minZ, EXTERIOR.maxZ),
+  wall(EXTERIOR.maxX, EXTERIOR.maxX + T, EXTERIOR.minZ, EXTERIOR.maxZ),
+  wall(EXTERIOR.minX, EXTERIOR.maxX, EXTERIOR.maxZ, EXTERIOR.maxZ + T),
+]
 
 function furniture(x: number, z: number, width: number, depth: number, height = 2): AABB {
   return wall(x - width / 2, x + width / 2, z - depth / 2, z + depth / 2, 0, height)
@@ -63,8 +79,10 @@ export const STATIC_COLLIDERS: AABB[] = [
   furniture(2.7, 1.75, 0.7, 0.7, 0.75),
 ]
 
-export function getWorldColliders(boxMoved: boolean, frontDoorClosed = false): AABB[] {
+export function getWorldColliders(boxMoved: boolean, includeExterior = false): AABB[] {
   const heavyX = HATCH_POS[0] + (boxMoved ? 1.7 : 0.3)
-  const door = frontDoorClosed ? [wall(6.875, 8.125, 5.55, 5.72, 0, 2.2)] : []
-  return [...WALLS, ...STATIC_COLLIDERS, furniture(heavyX, HATCH_POS[2], 0.9, 0.9, 1), ...door]
+  // Front door stays solid after entry so players cannot walk through the doorway gap.
+  const frontDoor = [wall(6.875, 8.125, 5.55, 5.72, 0, 2.2)]
+  const exterior = includeExterior ? EXTERIOR_WALLS : []
+  return [...WALLS, ...STATIC_COLLIDERS, furniture(heavyX, HATCH_POS[2], 0.9, 0.9, 1), ...frontDoor, ...exterior]
 }

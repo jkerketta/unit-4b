@@ -1,8 +1,10 @@
 import { create } from 'zustand'
+import { SPAWN, SPAWN_YAW } from '../world/layout'
 
 export type Phase = 'title' | 'intro' | 'calm' | 'chase' | 'win' | 'gameover'
 export type EntityState = 'dormant' | 'alert' | 'search' | 'chase' | 'attack'
 export type BoxCategory = 'bedroom' | 'kitchen' | 'living'
+export type HideSpotId = 'bed' | 'closet'
 export type BoxProgress = Record<BoxCategory, { opened: boolean; placed: boolean }>
 
 export interface Objective {
@@ -67,7 +69,7 @@ interface GameState {
   paused: boolean
   objectives: Objective[]
   activeObjectiveId: string | null
-  player: { position: [number, number, number]; yaw: number; stamina: number; hidden: boolean; hiddenSeen: boolean }
+  player: { position: [number, number, number]; yaw: number; stamina: number; hidden: boolean; hiddenSeen: boolean; hideSpot: HideSpotId | null }
   entity: { state: EntityState; room: string | null; targetRoom: string | null; position: [number, number, number] | null }
   flags: GameFlags
   boxes: BoxProgress
@@ -80,6 +82,7 @@ interface GameState {
   setPlayerPosition: (p: [number, number, number]) => void
   setStamina: (v: number) => void
   setHidden: (hidden: boolean, seen?: boolean) => void
+  setHideSpot: (spot: HideSpotId | null) => void
   setEntityState: (state: EntityState) => void
   setEntityRoom: (room: string | null, targetRoom?: string | null) => void
   setEntityPosition: (position: [number, number, number] | null) => void
@@ -98,7 +101,7 @@ function freshState() {
     paused: false,
     objectives: INITIAL_OBJECTIVES.map((o) => ({ ...o })),
     activeObjectiveId: null as string | null,
-    player: { position: [7.5, 0, 7.4] as [number, number, number], yaw: 0, stamina: 100, hidden: false, hiddenSeen: false },
+    player: { position: [...SPAWN] as [number, number, number], yaw: SPAWN_YAW, stamina: 100, hidden: false, hiddenSeen: false, hideSpot: null as HideSpotId | null },
     entity: { state: 'dormant' as EntityState, room: null as string | null, targetRoom: null as string | null, position: null as [number, number, number] | null },
     flags: { ...INITIAL_FLAGS },
     boxes: cloneBoxes(INITIAL_BOXES),
@@ -123,7 +126,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   setActiveObjective: (id) => set({ activeObjectiveId: id }),
   setPlayerPosition: (p) => set((s) => ({ player: { ...s.player, position: p } })),
   setStamina: (v) => set((s) => ({ player: { ...s.player, stamina: v } })),
-  setHidden: (hidden, seen = false) => set((s) => ({ player: { ...s.player, hidden, hiddenSeen: hidden && seen } })),
+  setHidden: (hidden, seen = false) => set((s) => ({
+    player: { ...s.player, hidden, hiddenSeen: hidden && seen, hideSpot: hidden ? s.player.hideSpot : null },
+  })),
+  setHideSpot: (hideSpot) => set((s) => ({ player: { ...s.player, hideSpot } })),
   setEntityState: (state) => set((s) => ({ entity: { ...s.entity, state } })),
   setEntityRoom: (room, targetRoom = null) =>
     set((s) => ({ entity: { ...s.entity, room, targetRoom } })),
@@ -166,7 +172,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       sessionId: get().sessionId + 1,
       phase: 'calm',
       paused: false,
-      player: { position: [...cp.playerPosition], yaw: cp.playerYaw, stamina: 100, hidden: false, hiddenSeen: false },
+      player: { position: [...cp.playerPosition], yaw: cp.playerYaw, stamina: 100, hidden: false, hiddenSeen: false, hideSpot: null },
       entity: { state: 'dormant', room: null, targetRoom: null, position: null },
       objectives: cp.objectives.map((o) => ({ ...o })),
       activeObjectiveId: cp.activeObjectiveId,

@@ -15,6 +15,7 @@ import Lease from '../world/props/Lease'
 import MovingBoxes from '../world/props/MovingBoxes'
 import Rug from '../world/props/Rug'
 import Bed from '../world/props/Bed'
+import Closet from '../world/props/Closet'
 import FrontDoor from '../world/props/FrontDoor'
 import Phone from '../world/props/Phone'
 import Furnishings from '../world/props/Furnishings'
@@ -35,7 +36,7 @@ function TitleDrift() {
 export default function Scene() {
   const sessionId = useGameStore((state) => state.sessionId)
   const phase = useGameStore((state) => state.phase)
-  const fogDensity = phase === 'title' ? FOG.density * 1.35 : phase === 'chase' ? FOG.density * 1.18 : FOG.density
+  const fogDensity = phase === 'title' ? FOG.density * 1.35 : FOG.density
   return (
     <>
       <fogExp2 attach="fog" args={[FOG.color, fogDensity]} />
@@ -60,6 +61,7 @@ function Runtime() {
       <Rug />
       <Hatch />
       <Bed />
+      <Closet />
       <FrontDoor />
       <Phone />
       <FloorPlanPoster />

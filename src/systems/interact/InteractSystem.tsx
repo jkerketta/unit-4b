@@ -3,6 +3,8 @@ import { type RefObject, useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { useUIStore } from '../../ui/subtitles'
 import { useGameStore } from '../../game/store'
+import { useScareStore } from '../scares/ScareManager'
+import { hideExitPrompt, tryExitHideSpot } from '../player/hideSpots'
 import { getInteractables, registerInteractable, type Interactable } from './interactables'
 
 export type InteractableRegistration = Omit<Interactable, 'object'> & {
@@ -39,9 +41,16 @@ export default function InteractSystem() {
     const down = (event: KeyboardEvent) => {
       if (event.code !== 'KeyE' || event.repeat) return
       const ui = useUIStore.getState()
-      if (useGameStore.getState().paused || ui.document || ui.introStep !== null) return
+      if (
+        useGameStore.getState().paused ||
+        ui.document ||
+        ui.introStep !== null ||
+        useScareStore.getState().wakeCutscene
+      ) return
       eHeld.current = true
       firedForHold.current = false
+      // While hidden, E always exits — no need to look at the bed/closet.
+      if (tryExitHideSpot()) return
       const current = target.current
       if (current && !current.holdSeconds) current.onInteract()
     }
@@ -62,7 +71,12 @@ export default function InteractSystem() {
 
   useFrame((_, dt) => {
     const ui = useUIStore.getState()
-    if (useGameStore.getState().paused || ui.document || ui.introStep !== null) {
+    if (
+      useGameStore.getState().paused ||
+      ui.document ||
+      ui.introStep !== null ||
+      useScareStore.getState().wakeCutscene
+    ) {
       target.current = null
       eHeld.current = false
       holdElapsed.current = 0
@@ -70,6 +84,20 @@ export default function InteractSystem() {
       useUIStore.getState().setHoldProgress(0)
       return
     }
+
+    // Always show leave prompt while hidden; skip world raycasts.
+    const exitPrompt = hideExitPrompt()
+    if (exitPrompt) {
+      target.current = null
+      eHeld.current = false
+      holdElapsed.current = 0
+      useUIStore.getState().setHoldProgress(0)
+      if (useUIStore.getState().currentPrompt !== exitPrompt) {
+        useUIStore.getState().setPrompt(exitPrompt)
+      }
+      return
+    }
+
     const enabled = getInteractables().filter((item) => item.enabled())
     const roots = new Map(enabled.map((item) => [item.object.uuid, item]))
     raycaster.current.setFromCamera(new THREE.Vector2(0, 0), camera)

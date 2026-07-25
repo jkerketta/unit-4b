@@ -1,25 +1,37 @@
 import { useEffect, useState } from 'react'
 import { useGameStore } from '../game/store'
+import { suppressUnlockPause } from '../systems/player/pauseGate'
+import { useScareStore } from '../systems/scares/ScareManager'
 import { useUIStore } from './subtitles'
+
+const PLAYABLE = new Set(['intro', 'calm', 'chase'])
 
 export default function PauseMenu() {
   const paused = useGameStore((state) => state.paused)
   const [controls, setControls] = useState(false)
   const resume = () => {
     setControls(false)
+    suppressUnlockPause()
     useGameStore.getState().resume()
-    document.querySelector('canvas')?.requestPointerLock()
   }
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.code !== 'Escape' || event.repeat) return
+      // Documents own Esc while open (they swallow it); never pause over a reader.
       if (useUIStore.getState().document || useUIStore.getState().introStep !== null) return
+      if (useScareStore.getState().wakeCutscene) return
       const state = useGameStore.getState()
+      if (!PLAYABLE.has(state.phase)) return
+
+      event.preventDefault()
       if (state.paused) {
+        setControls(false)
+        suppressUnlockPause()
         state.resume()
-        document.querySelector('canvas')?.requestPointerLock()
-      } else if ((state.phase === 'intro' || state.phase === 'calm' || state.phase === 'chase') && !document.pointerLockElement) {
+      } else {
+        suppressUnlockPause()
         state.pause()
+        if (document.pointerLockElement) document.exitPointerLock()
       }
     }
     window.addEventListener('keydown', onKey)
@@ -45,7 +57,7 @@ export default function PauseMenu() {
           <div className="menu-copy">
             <p>WASD / MOUSE — MOVE / LOOK</p>
             <p>SHIFT — RUN · E — INTERACT</p>
-            <p>ESC — PAUSE</p>
+            <p>ESC — PAUSE / RESUME</p>
             <button onClick={() => setControls(false)}>Back</button>
           </div>
         ) : (

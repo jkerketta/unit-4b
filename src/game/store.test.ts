@@ -84,6 +84,17 @@ describe('game store', () => {
     expect(checkpoint.boxes.bedroom.placed).toBe(false)
   })
 
+  it('tracks hideSpot and clears it when leaving a hide', () => {
+    const store = useGameStore.getState()
+    store.setHideSpot('closet')
+    store.setHidden(true)
+    expect(useGameStore.getState().player.hideSpot).toBe('closet')
+    expect(useGameStore.getState().player.hidden).toBe(true)
+    useGameStore.getState().setHidden(false)
+    expect(useGameStore.getState().player.hideSpot).toBe(null)
+    expect(useGameStore.getState().player.hidden).toBe(false)
+  })
+
   it('resetGame returns to title with fresh objectives', () => {
     useGameStore.getState().setPhase('chase')
     useGameStore.getState().completeObjective('unpack')

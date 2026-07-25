@@ -9,6 +9,7 @@ const COVER = makePSXMaterial({ color: '#211d1b', side: THREE.DoubleSide })
 
 export default function Notebook() {
   const ref = useRef<THREE.Mesh>(null)
+  const unread = useGameStore((state) => !state.flags.scare1Done)
   useInteractable({
     id: 'notebook',
     object: ref,
@@ -19,9 +20,17 @@ export default function Notebook() {
     },
   })
   return (
-    <mesh ref={ref} position={[-0.55, -3.47, 1.85]} rotation-x={-Math.PI / 2} rotation-z={-0.15}>
-      <boxGeometry args={[0.38, 0.5, 0.035]} />
-      <primitive object={COVER} attach="material" />
-    </mesh>
+    <group position={[-0.55, -3.47, 1.85]}>
+      <mesh ref={ref} rotation-x={-Math.PI / 2} rotation-z={-0.15}>
+        <boxGeometry args={[0.38, 0.5, 0.035]} />
+        <primitive object={COVER} attach="material" />
+      </mesh>
+      {unread && (
+        <mesh position={[0, 0.16, 0]} rotation={[Math.PI / 4, 0, Math.PI / 4]}>
+          <octahedronGeometry args={[0.055, 0]} />
+          <meshBasicMaterial color="#ffe36b" />
+        </mesh>
+      )}
+    </group>
   )
 }

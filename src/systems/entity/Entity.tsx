@@ -8,11 +8,11 @@ import { entitySkinTexture } from '../../render/textures'
 import { WALLS } from '../../world/layout'
 import { playerRig } from '../player/playerRig'
 import { audio } from '../audio/AudioManager'
-import { aiReducer, initialAIContext, type AIContext } from './aiMachine'
-import { ADJACENCY, ROOMS, doorwayBetween, findPath, findRoomForPoint, type RoomId } from './roomGraph'
+import { advancePatrol, aiReducer, initialAIContext, type AIContext } from './aiMachine'
+import { doorwayBetween, findPath, findRoomForPoint, ROOMS, type RoomId } from './roomGraph'
 import { canHear, hasLineOfSight } from './sensing'
 
-const SPAWN = new THREE.Vector3(-0.625, 0, 2.5)
+const SPAWN = new THREE.Vector3(9.55, 0, -4.15)
 const tuple = (vector: THREE.Vector3): [number, number, number] => [vector.x, vector.y, vector.z]
 
 export default function Entity() {
@@ -22,25 +22,25 @@ export default function Entity() {
   const rightArm = useRef<THREE.Mesh>(null)
   const position = useRef(SPAWN.clone())
   const ai = useRef<AIContext>(initialAIContext())
-  const logicalRoom = useRef<RoomId>('living')
-  const searchIndex = useRef(0)
+  const logicalRoom = useRef<RoomId>('kitchen')
   const syncTimer = useRef(0)
   const caught = useRef(false)
   const stepElapsed = useRef(0)
+  const grace = useRef(1.6)
   const skin = useMemo(() => makePSXMaterial({ map: entitySkinTexture(), color: '#e2ddd2' }), [])
   const dark = useMemo(() => makePSXMaterial({ color: '#161413' }), [])
 
   useEffect(() => {
     if (phase !== 'chase') return
     position.current.copy(SPAWN)
-    logicalRoom.current = 'living'
-    searchIndex.current = 0
+    logicalRoom.current = 'kitchen'
     syncTimer.current = 0
     caught.current = false
+    grace.current = 1.6
     ai.current = aiReducer(initialAIContext(), { type: 'WAKE' })
     const store = useGameStore.getState()
     store.setEntityState(ai.current.state)
-    store.setEntityRoom('living', null)
+    store.setEntityRoom('kitchen', ai.current.targetRoom)
     store.setEntityPosition(tuple(SPAWN))
   }, [phase])
 
@@ -54,18 +54,21 @@ export default function Entity() {
   useFrame(({ clock }, rawDt) => {
     if (phase !== 'chase' || useGameStore.getState().paused) return
     const dt = Math.min(rawDt, 0.05)
+    if (grace.current > 0) grace.current = Math.max(0, grace.current - dt)
     const player = useGameStore.getState().player
     const playerPosition = playerRig.position
     const distance = position.current.distanceTo(playerPosition)
     const playerRoom = findRoomForPoint(tuple(playerPosition))
     const sameFloor = Math.abs(position.current.y - playerPosition.y) < 1
-    const geometricSight = sameFloor && distance < 12 && hasLineOfSight(
+    const sensing = grace.current <= 0
+    // Fully invisible while hidden — no LOS or hearing.
+    const geometricSight = sensing && !player.hidden && sameFloor && distance < 12 && hasLineOfSight(
       [position.current.x, position.current.y + 1.8, position.current.z],
       [playerPosition.x, playerPosition.y + (playerRig.forcedEyeHeight ?? PLAYER.eyeHeight), playerPosition.z],
       WALLS,
     )
-    const visible = geometricSight && (!player.hidden || player.hiddenSeen)
-    const heard = canHear(
+    const visible = geometricSight
+    const heard = sensing && !player.hidden && canHear(
       tuple(position.current),
       tuple(playerPosition),
       playerRig.sprinting,
@@ -77,17 +80,17 @@ export default function Entity() {
       type: 'TICK',
       dt,
       playerVisible: visible,
-      playerHeard: heard && !player.hidden,
+      playerHeard: heard,
       playerRoom,
       playerHidden: player.hidden,
-      distanceToPlayer: distance,
+      distanceToPlayer: sensing ? distance : 99,
     })
 
     if (ai.current.state !== before.state) {
       useGameStore.getState().setEntityState(ai.current.state)
       if (ai.current.state === 'alert') {
         playerRig.shake = Math.max(playerRig.shake, 0.2)
-        audio.play('scareStinger', { volume: 0.62 })
+        audio.play('scareStinger', { volume: 0.9 })
       }
     }
 
@@ -120,12 +123,14 @@ export default function Entity() {
         target.copy(playerPosition).setY(0)
       } else {
         target.fromArray(ROOMS[targetRoom].center)
-        if (position.current.distanceTo(target) < 0.3 && ai.current.state === 'search') {
-          const neighbors = ADJACENCY[logicalRoom.current]
-          const next = neighbors[searchIndex.current % neighbors.length]
-          searchIndex.current += 1
-          ai.current = { ...ai.current, targetRoom: next }
-          target.fromArray(doorwayBetween(logicalRoom.current, next))
+        if (ai.current.state === 'search' && position.current.distanceTo(target) < 0.35) {
+          ai.current = advancePatrol(ai.current)
+          const nextTarget = ai.current.targetRoom ?? logicalRoom.current
+          if (nextTarget !== logicalRoom.current) {
+            const path = findPath(logicalRoom.current, nextTarget)
+            const hop = path[1]
+            if (hop) target.fromArray(doorwayBetween(logicalRoom.current, hop))
+          }
         }
       }
 

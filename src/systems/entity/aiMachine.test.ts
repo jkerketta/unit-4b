@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { aiReducer, initialAIContext, type AIContext, type AIEvent } from './aiMachine'
+import { advancePatrol, aiReducer, HOUSE_PATROL, initialAIContext, type AIContext, type AIEvent } from './aiMachine'
 
 const tick = (over: Partial<Extract<AIEvent, { type: 'TICK' }>> = {}): AIEvent => ({
   type: 'TICK',
@@ -13,18 +13,20 @@ const tick = (over: Partial<Extract<AIEvent, { type: 'TICK' }>> = {}): AIEvent =
 })
 
 describe('aiReducer', () => {
-  it('wakes dormant AI into alert', () => {
+  it('wakes dormant AI into alert ready to patrol from the kitchen', () => {
     const state = aiReducer(initialAIContext(), { type: 'WAKE' })
     expect(state.state).toBe('alert')
     expect(state.alertTimer).toBeGreaterThan(0)
+    expect(state.targetRoom).toBe('kitchen')
+    expect(state.patrolIndex).toBe(HOUSE_PATROL.indexOf('kitchen'))
   })
 
-  it('counts alert down into chase and remembers the room', () => {
-    let state: AIContext = { ...initialAIContext(), state: 'alert', alertTimer: 0.15 }
-    state = aiReducer(state, tick({ playerRoom: 'living', playerVisible: true }))
-    state = aiReducer(state, tick({ playerRoom: 'living', playerVisible: true }))
-    expect(state.state).toBe('chase')
-    expect(state.lastKnownPlayerRoom).toBe('living')
+  it('counts alert down into house patrol search', () => {
+    let state: AIContext = { ...initialAIContext(), state: 'alert', alertTimer: 0.15, patrolIndex: 0 }
+    state = aiReducer(state, tick({ playerRoom: 'living' }))
+    state = aiReducer(state, tick({ playerRoom: 'living' }))
+    expect(state.state).toBe('search')
+    expect(state.targetRoom).toBe(HOUSE_PATROL[0])
   })
 
   it('attacks a nearby visible player', () => {
@@ -43,14 +45,16 @@ describe('aiReducer', () => {
     expect(next.targetRoom).toBe('kitchen')
   })
 
-  it('catches a player it watched hide', () => {
+  it('cannot catch a player while they are hidden under the bed', () => {
     const state: AIContext = {
       ...initialAIContext(),
       state: 'chase',
       lastKnownPlayerRoom: 'bedroom',
       sawPlayerHide: true,
     }
-    expect(aiReducer(state, tick({ distanceToPlayer: 1, playerHidden: true })).state).toBe('attack')
+    const next = aiReducer(state, tick({ distanceToPlayer: 1, playerHidden: true, playerRoom: 'bedroom' }))
+    expect(next.state).toBe('search')
+    expect(next.sawPlayerHide).toBe(true)
   })
 
   it('loses an unseen player and searches the last known room', () => {
@@ -65,17 +69,32 @@ describe('aiReducer', () => {
     expect(next.targetRoom).toBe('kitchen')
   })
 
-  it('search returns to chase on sight but ignores an unseen hidden player', () => {
+  it('search returns to chase on sight but ignores a hidden player', () => {
     const state: AIContext = { ...initialAIContext(), state: 'search', targetRoom: 'bedroom' }
     expect(aiReducer(state, tick({ playerVisible: true, playerRoom: 'hallway' })).state).toBe('chase')
-    expect(aiReducer(state, tick({ playerHidden: true, playerRoom: 'bedroom' })).state).toBe('search')
+    expect(aiReducer(state, tick({ playerHidden: true, playerVisible: true, playerRoom: 'bedroom' })).state).toBe('search')
   })
 
-  it('records a witnessed hide and keeps that knowledge', () => {
+  it('records a witnessed hide when the player slips under the bed during chase', () => {
     const state: AIContext = { ...initialAIContext(), state: 'chase', lastKnownPlayerRoom: 'bedroom' }
-    const seen = aiReducer(state, tick({ playerVisible: true, playerHidden: true, playerRoom: 'bedroom' }))
-    expect(seen.sawPlayerHide).toBe(true)
-    expect(aiReducer(seen, tick({ playerVisible: true, playerHidden: false, playerRoom: 'bedroom' })).sawPlayerHide).toBe(true)
+    const hidden = aiReducer(state, tick({ playerHidden: true, playerRoom: 'bedroom' }))
+    expect(hidden.sawPlayerHide).toBe(true)
+    expect(hidden.state).toBe('search')
+  })
+
+  it('advances house patrol through every room', () => {
+    let state = initialAIContext()
+    const visited = new Set<string>()
+    for (let i = 0; i < HOUSE_PATROL.length; i += 1) {
+      state = advancePatrol(state)
+      visited.add(state.targetRoom!)
+    }
+    expect(visited.has('living')).toBe(true)
+    expect(visited.has('kitchen')).toBe(true)
+    expect(visited.has('bedroom')).toBe(true)
+    expect(visited.has('bathroom')).toBe(true)
+    expect(visited.has('entry')).toBe(true)
+    expect(visited.has('hallway')).toBe(true)
   })
 
   it('keeps attack terminal', () => {

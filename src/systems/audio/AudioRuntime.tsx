@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useGameStore } from '../../game/store'
 import { audio } from './AudioManager'
-import { playLandlordVoicemail } from './voicemail'
+import { playTenantVoicemail } from './voicemail'
 
 export default function AudioRuntime() {
   const phase = useGameStore((state) => state.phase)
@@ -28,7 +28,7 @@ export default function AudioRuntime() {
 
   useEffect(() => {
     if (phase !== 'gameover') return
-    const timer = window.setTimeout(() => playLandlordVoicemail(), 1500)
+    const timer = window.setTimeout(() => playTenantVoicemail(), 1500)
     return () => window.clearTimeout(timer)
   }, [phase, sessionId])
 

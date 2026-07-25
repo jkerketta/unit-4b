@@ -15,8 +15,12 @@ export type SoundName =
   | 'deadbolt'
   | 'scareStinger'
   | 'shriek'
+  | 'churchBell'
+  | 'static'
   | 'phoneRing'
   | 'voicemailBed'
+  | 'uiClick'
+  | 'paper'
 
 interface PlayOptions {
   volume?: number
@@ -48,25 +52,33 @@ const SOURCES: Record<SoundName, string> = {
   deadbolt: '/audio/deadbolt.wav',
   scareStinger: '/audio/scare-stinger.wav',
   shriek: '/audio/shriek.wav',
+  churchBell: '/audio/church-bell.wav',
+  static: '/audio/static.wav',
   phoneRing: '/audio/phone-ring.wav',
   voicemailBed: '/audio/voicemail-bed.wav',
+  uiClick: '/audio/ui-click.wav',
+  paper: '/audio/paper.wav',
 }
 
 const BASE_VOLUME: Record<SoundName, number> = {
   calmAmbience: 0.3,
   chaseDrone: 0.48,
-  playerStep: 0.25,
-  entityStep: 0.38,
-  heartbeat: 0.5,
+  playerStep: 0.42,
+  entityStep: 0.48,
+  heartbeat: 0.62,
   box: 0.6,
   rug: 0.5,
   hatch: 0.7,
   ladder: 0.55,
   deadbolt: 0.75,
-  scareStinger: 0.8,
-  shriek: 0.85,
+  scareStinger: 0.95,
+  shriek: 1.0,
+  churchBell: 0.72,
+  static: 0.45,
   phoneRing: 0.65,
   voicemailBed: 0.28,
+  uiClick: 0.55,
+  paper: 0.58,
 }
 
 class AudioManager {
@@ -80,6 +92,10 @@ class AudioManager {
   private paused = false
   private activeShots: ActiveShot[] = []
   private unlockHandler: (() => void) | null = null
+  private heartbeatVolume = 0
+  private heartbeatBpm = 60
+  private heartbeatNextAt = 0
+  private heartbeatRaf = 0
 
   arm(): void {
     if (this.armed || typeof window === 'undefined') return
@@ -126,6 +142,10 @@ class AudioManager {
       if (paused) active.howl.pause(active.id)
       else active.howl.play(active.id)
     }
+    if (!paused && this.heartbeatVolume > 0.01) {
+      this.heartbeatNextAt = performance.now() + 80
+      this.ensureHeartbeatPulses()
+    }
     const synth = typeof window === 'undefined'
       ? undefined
       : (window as Window & { speechSynthesis?: SpeechSynthesis }).speechSynthesis
@@ -135,18 +155,21 @@ class AudioManager {
 
   private applyPhase(phase: Phase): void {
     const next = phaseLoopFor(phase)
+    if (phase === 'chase') {
+      // No chase drone bed — only fade out calm ambience. Heartbeat/phone keep running.
+      this.stopLoop('phase', 450)
+      return
+    }
     if (!next) {
       this.stopLoop('phase', 450)
-      this.stopLoop('heartbeat', 150)
+      this.setHeartbeat(0, 60)
       this.stopLoop('phone', 150)
       this.stopVoicemail()
       return
     }
     this.startLoop('phase', next, BASE_VOLUME[next], 900)
-    if (phase !== 'chase') {
-      this.stopLoop('heartbeat', 150)
-      this.stopLoop('phone', 150)
-    }
+    this.setHeartbeat(0, 60)
+    this.stopLoop('phone', 150)
   }
 
   play(name: SoundName, options: PlayOptions = {}): number | null {
@@ -199,12 +222,42 @@ class AudioManager {
   }
 
   setHeartbeat(volume: number, bpm: number): void {
+    this.heartbeatVolume = volume
+    this.heartbeatBpm = Math.max(48, Math.min(160, bpm))
+    // Kill any old rate-stretched loop — it sounded like rustling when sped up.
+    if (this.loops.has('heartbeat')) this.stopLoop('heartbeat', 40)
     if (volume <= 0.01) {
-      this.stopLoop('heartbeat', 120)
+      this.stopHeartbeatPulses()
       return
     }
-    this.startLoop('heartbeat', 'heartbeat', volume, 100)
-    this.updateLoop('heartbeat', volume, bpm / 60)
+    this.ensureHeartbeatPulses()
+  }
+
+  private ensureHeartbeatPulses(): void {
+    if (typeof window === 'undefined' || this.heartbeatRaf) return
+    const tick = () => {
+      this.heartbeatRaf = window.requestAnimationFrame(tick)
+      if (!this.initialized || this.paused || this.heartbeatVolume <= 0.01) return
+      const now = performance.now()
+      if (now < this.heartbeatNextAt) return
+      const intervalMs = 60_000 / this.heartbeatBpm
+      this.heartbeatNextAt = now + intervalMs
+      this.play('heartbeat', {
+        volume: Math.min(1, this.heartbeatVolume * 0.95),
+        rate: 1,
+      })
+    }
+    this.heartbeatNextAt = performance.now()
+    this.heartbeatRaf = window.requestAnimationFrame(tick)
+  }
+
+  private stopHeartbeatPulses(): void {
+    if (this.heartbeatRaf && typeof window !== 'undefined') {
+      window.cancelAnimationFrame(this.heartbeatRaf)
+    }
+    this.heartbeatRaf = 0
+    this.heartbeatVolume = 0
+    this.heartbeatNextAt = 0
   }
 
   startPhoneRing(): void {
@@ -265,6 +318,7 @@ class AudioManager {
       this.unlockHandler = null
       this.armed = false
     }
+    this.stopHeartbeatPulses()
     this.voicemailTimers.forEach((timer) => window.clearTimeout(timer))
     this.voicemailTimers = []
     if (typeof window !== 'undefined') {

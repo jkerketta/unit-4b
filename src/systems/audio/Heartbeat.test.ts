@@ -17,9 +17,10 @@ describe('heartbeatParams', () => {
 })
 
 describe('phaseLoopFor', () => {
-  it('maps playable phases to exactly one ambience loop', () => {
+  it('maps calm/intro to ambience and chase to silence', () => {
     expect(phaseLoopFor('calm')).toBe('calmAmbience')
-    expect(phaseLoopFor('chase')).toBe('chaseDrone')
+    expect(phaseLoopFor('intro')).toBe('calmAmbience')
+    expect(phaseLoopFor('chase')).toBeNull()
   })
 
   it.each(['title', 'win', 'gameover'] as const)('maps %s to silence', (phase) => {

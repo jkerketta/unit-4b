@@ -1,10 +1,10 @@
 import type { Phase } from '../../game/store'
 
-export type PhaseLoop = 'calmAmbience' | 'chaseDrone' | null
+export type PhaseLoop = 'calmAmbience' | null
 
 export function phaseLoopFor(phase: Phase): PhaseLoop {
   if (phase === 'intro' || phase === 'calm') return 'calmAmbience'
-  if (phase === 'chase') return 'chaseDrone'
+  // Chase: no looping bed — discrete heartbeat + footsteps only (avoids rustle drone).
   return null
 }
 

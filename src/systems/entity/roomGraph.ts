@@ -17,31 +17,33 @@ function room(id: RoomId, x0: number, x1: number, z0: number, z1: number, y0 = 0
 }
 
 export const ROOMS: Record<RoomId, RoomNode> = {
-  living: room('living', -2.5, 2.0, 0.5, 4.5),
-  entry: room('entry', 2.0, 8.5, 2.5, 4.5),
-  hallway: room('hallway', 2.0, 3.5, -4.5, 0.5),
-  kitchen: room('kitchen', 3.5, 8.5, -4.5, -1.5),
-  bedroom: room('bedroom', -0.5, 2.0, -4.5, -1.0),
-  bathroom: room('bathroom', -2.5, -0.5, -4.5, -2.0),
-  secret: room('secret', -2.0, 1.0, 1.0, 4.0, -4, -0.2),
+  living: room('living', -3.125, 5.0, 0.625, 5.625),
+  entry: room('entry', 5.0, 10.625, 0.625, 5.625),
+  hallway: room('hallway', -3.125, 3.125, -1.875, 0.625),
+  kitchen: room('kitchen', 3.125, 10.625, -5.625, 0.625),
+  bedroom: room('bedroom', -0.625, 3.125, -5.625, -1.875),
+  bathroom: room('bathroom', -3.125, -0.625, -5.625, -1.875),
+  secret: room('secret', -2.5, 1.25, 1.25, 5.0, -4, -0.2),
 }
 
 export const ADJACENCY: Record<RoomId, RoomId[]> = {
-  living: ['entry', 'hallway'],
-  entry: ['living'],
-  hallway: ['living', 'kitchen', 'bedroom'],
-  kitchen: ['hallway'],
+  living: ['hallway', 'entry'],
+  hallway: ['living', 'bedroom', 'bathroom', 'kitchen'],
   bedroom: ['hallway', 'bathroom'],
-  bathroom: ['bedroom'],
+  bathroom: ['bedroom', 'hallway'],
+  kitchen: ['hallway', 'entry'],
+  entry: ['living', 'kitchen'],
   secret: [],
 }
 
 export const DOORWAYS: Record<string, [number, number, number]> = {
-  'living|entry': [2.0, 0, 3.5],
-  'hallway|living': [2.75, 0, 0.5],
-  'hallway|kitchen': [3.5, 0, -3.0],
-  'bedroom|hallway': [2.0, 0, -2.75],
-  'bathroom|bedroom': [-0.5, 0, -3.25],
+  'bathroom|bedroom': [-0.625, 0, -3.75],
+  'bathroom|hallway': [-1.875, 0, -1.875],
+  'bedroom|hallway': [1.25, 0, -1.875],
+  'hallway|kitchen': [3.125, 0, -0.625],
+  'hallway|living': [0, 0, 0.625],
+  'entry|living': [5.0, 0, 3.125],
+  'entry|kitchen': [7.5, 0, 0.625],
 }
 
 export function findRoomForPoint(p: [number, number, number]): RoomId | null {

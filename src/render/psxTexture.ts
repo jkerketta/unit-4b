@@ -14,5 +14,7 @@ export function makeCanvasTexture(
   tex.magFilter = THREE.NearestFilter
   tex.generateMipmaps = false
   tex.colorSpace = THREE.SRGBColorSpace
+  tex.wrapS = THREE.RepeatWrapping
+  tex.wrapT = THREE.RepeatWrapping
   return tex
 }

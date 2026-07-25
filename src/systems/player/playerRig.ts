@@ -6,4 +6,6 @@ export const playerRig = {
   yaw: 0,
   moving: false,
   sprinting: false,
+  shake: 0,
+  forcedEyeHeight: undefined as number | undefined,
 }

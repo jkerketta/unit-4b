@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { ADJACENCY, DOORWAYS, ROOMS, type RoomId, doorwayBetween, findPath, findRoomForPoint } from './roomGraph'
+import { ADJACENCY, DOORWAYS, ROOMS, doorwayBetween, findPath, findRoomForPoint } from './roomGraph'
 
 describe('roomGraph', () => {
   it('finds the room containing a point', () => {
-    expect(findRoomForPoint([0, 0, 2.5])).toBe('living')
-    expect(findRoomForPoint([6, 0, -3])).toBe('kitchen')
-    expect(findRoomForPoint([2.75, 0, -2])).toBe('hallway')
+    expect(findRoomForPoint([0, 0, 3])).toBe('living')
+    expect(findRoomForPoint([7, 0, -3])).toBe('kitchen')
+    expect(findRoomForPoint([0, 0, 0])).toBe('hallway')
+    expect(findRoomForPoint([7, 0, 3])).toBe('entry')
     expect(findRoomForPoint([50, 0, 50])).toBeNull()
   })
 
@@ -27,20 +28,25 @@ describe('roomGraph', () => {
     expect(findPath('living', 'living')).toEqual(['living'])
   })
 
-  it('every adjacency pair has a doorway point inside both rooms’ shared wall region', () => {
-    for (const [a, bs] of Object.entries(ADJACENCY)) {
+  it('every adjacency pair has a doorway point inside both rooms', () => {
+    const inRoom = (p: [number, number, number], room: (typeof ROOMS)[keyof typeof ROOMS]) =>
+      p[0] >= room.bounds.min[0] && p[0] <= room.bounds.max[0] &&
+      p[2] >= room.bounds.min[2] && p[2] <= room.bounds.max[2]
+
+    for (const [a, bs] of Object.entries(ADJACENCY) as [keyof typeof ROOMS, (keyof typeof ROOMS)[]][]) {
       for (const b of bs) {
-        const d = doorwayBetween(a as RoomId, b as RoomId)
-        expect(d).toBeDefined()
+        const d = doorwayBetween(a, b)
         expect(DOORWAYS[`${a}|${b}`] ?? DOORWAYS[`${b}|${a}`]).toEqual(d)
+        expect(inRoom(d, ROOMS[a])).toBe(true)
+        expect(inRoom(d, ROOMS[b])).toBe(true)
       }
     }
   })
 
   it('all room ids in adjacency exist in ROOMS', () => {
     for (const [a, bs] of Object.entries(ADJACENCY)) {
-      expect(ROOMS[a as RoomId]).toBeDefined()
-      bs.forEach((b) => expect(ROOMS[b as RoomId]).toBeDefined())
+      expect(ROOMS[a as keyof typeof ROOMS]).toBeDefined()
+      bs.forEach((b) => expect(ROOMS[b as keyof typeof ROOMS]).toBeDefined())
     }
   })
 })

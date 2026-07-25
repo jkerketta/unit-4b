@@ -23,12 +23,29 @@ describe('game store', () => {
     expect(obj?.complete).toBe(true)
   })
 
+  it('only advances unpacking after all three categories are arranged', () => {
+    const store = useGameStore.getState()
+    store.setActiveObjective('unpack')
+    store.openBox('bedroom')
+    store.placeBoxContents('bedroom')
+    store.openBox('kitchen')
+    store.placeBoxContents('kitchen')
+    expect(useGameStore.getState().activeObjectiveId).toBe('unpack')
+    expect(useGameStore.getState().objectives.find((o) => o.id === 'unpack')?.complete).toBe(false)
+    store.openBox('living')
+    store.placeBoxContents('living')
+    expect(useGameStore.getState().activeObjectiveId).toBe('lease')
+    expect(useGameStore.getState().objectives.find((o) => o.id === 'unpack')?.complete).toBe(true)
+  })
+
   it('saveCheckpoint + restoreCheckpoint round-trips position, objectives and flags', () => {
     const s = useGameStore.getState()
     s.setPhase('calm')
     s.setPlayerPosition([1, 0, 2])
     s.completeObjective('unpack')
     s.setFlag('hatchOpen', true)
+    s.openBox('bedroom')
+    s.placeBoxContents('bedroom')
     useGameStore.getState().saveCheckpoint(Math.PI / 2)
 
     // mutate everything afterwards
@@ -42,7 +59,29 @@ describe('game store', () => {
     expect(after.player.position).toEqual([1, 0, 2])
     expect(after.flags.hatchOpen).toBe(true)
     expect(after.flags.leaseRead).toBe(false)
+    expect(after.boxes.bedroom.placed).toBe(true)
     expect(after.objectives.find((o) => o.id === 'unpack')?.complete).toBe(true)
+  })
+
+  it('keeps checkpoint snapshots isolated from live nested state', () => {
+    const store = useGameStore.getState()
+    store.setPlayerPosition([1, 0, 2])
+    store.saveCheckpoint(0.75)
+
+    const checkpoint = useGameStore.getState().checkpoint!
+    expect(checkpoint.playerPosition).not.toBe(useGameStore.getState().player.position)
+    expect(checkpoint.objectives).not.toBe(useGameStore.getState().objectives)
+    expect(checkpoint.flags).not.toBe(useGameStore.getState().flags)
+    expect(checkpoint.boxes).not.toBe(useGameStore.getState().boxes)
+
+    useGameStore.getState().setPlayerPosition([99, 0, 2])
+    useGameStore.getState().completeObjective('unpack')
+    useGameStore.getState().setFlag('hatchOpen', true)
+
+    expect(checkpoint.playerPosition).toEqual([1, 0, 2])
+    expect(checkpoint.objectives[0].complete).toBe(false)
+    expect(checkpoint.flags.hatchOpen).toBe(false)
+    expect(checkpoint.boxes.bedroom.placed).toBe(false)
   })
 
   it('resetGame returns to title with fresh objectives', () => {

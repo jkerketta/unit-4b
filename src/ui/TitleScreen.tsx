@@ -15,7 +15,7 @@ export default function TitleScreen() {
     const store = useGameStore.getState()
     store.setPhase('intro')
     startObjectives()
-    useUIStore.getState().setIntroStep(0)
+    useUIStore.getState().startIntroDialogue('initial')
   }
 
   return (

@@ -3,6 +3,7 @@ import { fadeTransition, useUIStore } from './subtitles'
 
 afterEach(() => {
   vi.useRealTimers()
+  Reflect.deleteProperty(document, 'exitPointerLock')
   useUIStore.getState().resetTransient()
 })
 
@@ -33,13 +34,29 @@ describe('fade transitions', () => {
 })
 
 describe('modal UI state', () => {
+  it('marks a document open before releasing pointer lock', () => {
+    const exitPointerLock = vi.fn(() => {
+      expect(useUIStore.getState().document).toBe('floorplan')
+    })
+    Object.defineProperty(document, 'exitPointerLock', {
+      configurable: true,
+      value: exitPointerLock,
+    })
+
+    useUIStore.getState().openDocument('floorplan')
+
+    expect(exitPointerLock).toHaveBeenCalledOnce()
+  })
+
   it('opens and resets documents and intro dialogue', () => {
     useUIStore.getState().openDocument('lease')
-    useUIStore.getState().setIntroStep(3)
+    useUIStore.getState().startIntroDialogue('followup')
     expect(useUIStore.getState().document).toBe('lease')
-    expect(useUIStore.getState().introStep).toBe(3)
+    expect(useUIStore.getState().introStep).toBe(0)
+    expect(useUIStore.getState().introScript).toBe('followup')
     useUIStore.getState().resetTransient()
     expect(useUIStore.getState().document).toBeNull()
     expect(useUIStore.getState().introStep).toBeNull()
+    expect(useUIStore.getState().introScript).toBeNull()
   })
 })

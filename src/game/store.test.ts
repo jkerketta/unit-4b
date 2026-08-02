@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useGameStore, INITIAL_OBJECTIVES } from './store'
 
 const initial = useGameStore.getState()
@@ -103,5 +103,72 @@ describe('game store', () => {
     expect(s.phase).toBe('title')
     expect(s.objectives).toEqual(INITIAL_OBJECTIVES)
     expect(s.entity.state).toBe('dormant')
+  })
+})
+
+describe('completion timing', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    useGameStore.setState(initial, true)
+  })
+
+  const at = (iso: string) => vi.setSystemTime(new Date(iso))
+
+  it('records total play time and calm-window time at win', () => {
+    vi.useFakeTimers()
+    at('2026-08-02T12:00:00.000Z')
+    useGameStore.getState().setPhase('intro')
+    at('2026-08-02T12:01:00.000Z')
+    useGameStore.getState().setPhase('calm')
+    at('2026-08-02T12:05:30.000Z')
+    useGameStore.getState().setPhase('win')
+
+    const s = useGameStore.getState()
+    expect(s.totalTimeSec).toBe(330)
+    expect(s.escapeSec).toBe(270)
+    expect(s.completedAtIso).toBe('2026-08-02T12:05:30.000Z')
+  })
+
+  it('caps timings at zero when a window never started', () => {
+    vi.useFakeTimers()
+    at('2026-08-02T12:00:00.000Z')
+    useGameStore.getState().setPhase('win')
+    const s = useGameStore.getState()
+    expect(s.totalTimeSec).toBe(0)
+    expect(s.escapeSec).toBe(0)
+  })
+
+  it('restarts the calm window when a checkpoint is restored', () => {
+    vi.useFakeTimers()
+    at('2026-08-02T12:00:00.000Z')
+    useGameStore.getState().setPhase('intro')
+    at('2026-08-02T12:01:00.000Z')
+    useGameStore.getState().setPhase('calm')
+    useGameStore.getState().saveCheckpoint(0)
+    at('2026-08-02T12:03:00.000Z')
+    useGameStore.getState().restoreCheckpoint()
+    at('2026-08-02T12:05:00.000Z')
+    useGameStore.getState().setPhase('win')
+
+    const s = useGameStore.getState()
+    expect(s.escapeSec).toBe(120)
+    expect(s.totalTimeSec).toBe(300)
+  })
+
+  it('resetGame clears recorded timings', () => {
+    vi.useFakeTimers()
+    at('2026-08-02T12:00:00.000Z')
+    useGameStore.getState().setPhase('intro')
+    at('2026-08-02T12:05:00.000Z')
+    useGameStore.getState().setPhase('calm')
+    useGameStore.getState().setPhase('win')
+    useGameStore.getState().resetGame()
+
+    const s = useGameStore.getState()
+    expect(s.totalTimeSec).toBeNull()
+    expect(s.escapeSec).toBeNull()
+    expect(s.completedAtIso).toBeNull()
+    expect(s.totalStartAt).toBeNull()
+    expect(s.calmStartAt).toBeNull()
   })
 })

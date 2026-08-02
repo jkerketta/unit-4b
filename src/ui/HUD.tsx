@@ -1,7 +1,7 @@
 import InteractPrompt from './InteractPrompt'
 import ObjectiveCard from './ObjectiveCard'
 import StaminaBar from './StaminaBar'
-import Subtitles from './Subtitles'
+import Subtitles from './Subtitles.tsx'
 import DeathScreen from './DeathScreen'
 import WinScreen from './WinScreen'
 import { useUIStore } from './subtitles'

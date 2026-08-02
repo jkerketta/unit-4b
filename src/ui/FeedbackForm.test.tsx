@@ -1,0 +1,127 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { act } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import FeedbackForm from './FeedbackForm'
+import { captureDevice } from '../lib/feedback'
+
+const props = {
+  totalTimeSec: 330,
+  escapeSec: 270,
+  completedAtIso: '2026-08-02T12:05:30.000Z',
+}
+
+let container: HTMLDivElement
+let root: Root
+
+function renderForm() {
+  container = document.createElement('div')
+  document.body.appendChild(container)
+  root = createRoot(container)
+  act(() => {
+    root.render(<FeedbackForm {...props} />)
+  })
+}
+
+function cleanup() {
+  act(() => {
+    root?.unmount()
+  })
+  container?.remove()
+}
+
+function setValue(element: HTMLInputElement | HTMLTextAreaElement, value: string) {
+  const proto = element instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
+  const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set
+  act(() => {
+    setter?.call(element, value)
+    element.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+}
+
+function field(name: string): HTMLInputElement | HTMLTextAreaElement {
+  return container.querySelector(`[name="${name}"]`) as HTMLInputElement | HTMLTextAreaElement
+}
+
+async function submit() {
+  const button = container.querySelector('button[type="submit"]') as HTMLButtonElement
+  await act(async () => {
+    button.click()
+  })
+}
+
+function fillValidForm() {
+  setValue(field('name'), 'Ada Lovelace')
+  setValue(field('email'), 'ada@example.com')
+  setValue(field('feedback'), 'The hatch scare got me.')
+}
+
+afterEach(() => {
+  cleanup()
+  vi.unstubAllEnvs()
+  vi.unstubAllGlobals()
+})
+
+describe('FeedbackForm', () => {
+  it('blocks submit and shows inline errors until all required fields are valid', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    renderForm()
+
+    await submit()
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    const alerts = container.querySelectorAll('[role="alert"]')
+    expect(alerts.length).toBe(3)
+  })
+
+  it('auto-populates the device read-out without asking for input', () => {
+    renderForm()
+    const device = container.querySelector('.feedback-device output') as HTMLElement
+    expect(device.textContent).toBe(captureDevice())
+  })
+
+  it('submits the expected payload and shows a success state', async () => {
+    vi.stubEnv('VITE_FEEDBACK_ENDPOINT', 'https://script.google.com/macros/s/TEST/exec')
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    vi.stubGlobal('fetch', fetchMock)
+    renderForm()
+
+    fillValidForm()
+    await submit()
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('https://script.google.com/macros/s/TEST/exec')
+    expect(options.method).toBe('POST')
+    expect(JSON.parse(options.body as string)).toEqual({
+      name: 'Ada Lovelace',
+      email: 'ada@example.com',
+      feedback: 'The hatch scare got me.',
+      device: captureDevice(),
+      total_time_sec: 330,
+      escape_sec: 270,
+      completed_at_iso: '2026-08-02T12:05:30.000Z',
+    })
+    expect(container.textContent).toContain('THANK YOU')
+  })
+
+  it('shows an error state when submission fails', async () => {
+    vi.stubEnv('VITE_FEEDBACK_ENDPOINT', 'https://script.google.com/macros/s/TEST/exec')
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('boom')))
+    renderForm()
+
+    fillValidForm()
+    await submit()
+
+    expect(container.textContent).toContain('Network error')
+  })
+
+  it('shows an error state when no endpoint is configured', async () => {
+    renderForm()
+
+    fillValidForm()
+    await submit()
+
+    expect(container.textContent).toContain('not configured')
+  })
+})

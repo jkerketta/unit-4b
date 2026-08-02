@@ -74,6 +74,11 @@ interface GameState {
   flags: GameFlags
   boxes: BoxProgress
   checkpoint: Checkpoint | null
+  totalStartAt: number | null
+  calmStartAt: number | null
+  totalTimeSec: number | null
+  escapeSec: number | null
+  completedAtIso: string | null
   setPhase: (phase: Phase) => void
   pause: () => void
   resume: () => void
@@ -106,15 +111,32 @@ function freshState() {
     flags: { ...INITIAL_FLAGS },
     boxes: cloneBoxes(INITIAL_BOXES),
     checkpoint: null as Checkpoint | null,
+    totalStartAt: null as number | null,
+    calmStartAt: null as number | null,
+    totalTimeSec: null as number | null,
+    escapeSec: null as number | null,
+    completedAtIso: null as string | null,
   }
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
   ...freshState(),
-  setPhase: (phase) => set((state) => ({
-    phase,
-    paused: phase === 'intro' || phase === 'calm' || phase === 'chase' ? state.paused : false,
-  })),
+  setPhase: (phase) => set((state) => {
+    const now = Date.now()
+    const timing: Partial<GameState> = {}
+    if (phase === 'intro' && state.phase === 'title') timing.totalStartAt = now
+    if (phase === 'calm') timing.calmStartAt = now
+    if (phase === 'win') {
+      timing.totalTimeSec = state.totalStartAt !== null ? Math.max(0, Math.round((now - state.totalStartAt) / 1000)) : 0
+      timing.escapeSec = state.calmStartAt !== null ? Math.max(0, Math.round((now - state.calmStartAt) / 1000)) : 0
+      timing.completedAtIso = new Date(now).toISOString()
+    }
+    return {
+      phase,
+      paused: phase === 'intro' || phase === 'calm' || phase === 'chase' ? state.paused : false,
+      ...timing,
+    }
+  }),
   pause: () => set((state) => (
     state.phase === 'intro' || state.phase === 'calm' || state.phase === 'chase' ? { paused: true } : {}
   )),
@@ -172,6 +194,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       sessionId: get().sessionId + 1,
       phase: 'calm',
       paused: false,
+      calmStartAt: Date.now(),
       player: { position: [...cp.playerPosition], yaw: cp.playerYaw, stamina: 100, hidden: false, hiddenSeen: false, hideSpot: null },
       entity: { state: 'dormant', room: null, targetRoom: null, position: null },
       objectives: cp.objectives.map((o) => ({ ...o })),

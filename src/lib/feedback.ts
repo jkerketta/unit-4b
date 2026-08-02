@@ -6,6 +6,7 @@ export interface FeedbackPayload {
   total_time_sec: number
   escape_sec: number
   completed_at_iso: string
+  submitted_at_iso: string
 }
 
 export interface FeedbackFormValues {
@@ -29,13 +30,12 @@ export interface FeedbackSubmitResult {
 // The game has no backend of its own. The win-screen feedback form POSTs JSON
 // to a Google Apps Script web app, which writes the row to a spreadsheet.
 //
-// Configure the deployed web app URL one of two ways:
-//  1. `VITE_FEEDBACK_ENDPOINT` in a `.env` file (recommended), or
-//  2. paste it into DEFAULT_FEEDBACK_ENDPOINT below.
-//
-// TODO(unit-4b): paste the deployed Google Apps Script Web App URL here, e.g.
-// `https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec`.
-export const DEFAULT_FEEDBACK_ENDPOINT = ''
+// The deployed web app URL is baked in below so every build (Vercel, local,
+// preview) can send feedback. A `VITE_FEEDBACK_ENDPOINT` env var still takes
+// precedence if you ever need to point at a different script (see
+// resolveEndpoint).
+export const DEFAULT_FEEDBACK_ENDPOINT =
+  'https://script.google.com/macros/s/AKfycbwCJ49-Iuslvi1m7qmkfQH1JSIOwrkpun0drRQngLsv20s344tSx242NV1-_U96mRoMjQ/exec'
 
 function resolveEndpoint(): string {
   const fromEnv = import.meta.env.VITE_FEEDBACK_ENDPOINT

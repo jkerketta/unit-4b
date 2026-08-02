@@ -42,6 +42,7 @@ export default function FeedbackForm({ totalTimeSec, escapeSec, completedAtIso }
     total_time_sec: totalTimeSec,
     escape_sec: escapeSec,
     completed_at_iso: completedAtIso,
+    submitted_at_iso: new Date().toISOString(),
   })
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {

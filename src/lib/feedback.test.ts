@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { captureDevice, formatTime, submitFeedback, validateFeedback, type FeedbackPayload } from './feedback'
+import {
+  captureDevice,
+  DEFAULT_FEEDBACK_ENDPOINT,
+  formatTime,
+  submitFeedback,
+  validateFeedback,
+  type FeedbackPayload,
+} from './feedback'
 
 const validPayload: FeedbackPayload = {
   name: 'Test',
@@ -9,6 +16,7 @@ const validPayload: FeedbackPayload = {
   total_time_sec: 330,
   escape_sec: 270,
   completed_at_iso: '2026-08-02T12:05:30.000Z',
+  submitted_at_iso: '2026-08-02T12:30:00.000Z',
 }
 
 afterEach(() => {
@@ -86,6 +94,20 @@ describe('submitFeedback', () => {
     expect(options.redirect).toBe('follow')
     expect(options.headers).toMatchObject({ 'Content-Type': 'text/plain;charset=utf-8' })
     expect(options.body).toBe(JSON.stringify(validPayload))
+  })
+
+  it('falls back to the baked-in default endpoint when no env var is set', async () => {
+    vi.stubEnv('VITE_FEEDBACK_ENDPOINT', '')
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await submitFeedback(validPayload)
+
+    expect(result).toEqual({ ok: true })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe(DEFAULT_FEEDBACK_ENDPOINT)
+    expect(DEFAULT_FEEDBACK_ENDPOINT).toContain('script.google.com')
   })
 
   it('does not POST when no endpoint is configured', async () => {

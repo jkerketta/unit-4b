@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import FeedbackForm from './FeedbackForm'
-import { captureDevice } from '../lib/feedback'
+import { captureDevice, DEFAULT_FEEDBACK_ENDPOINT } from '../lib/feedback'
 
 const props = {
   totalTimeSec: 330,
@@ -57,6 +57,7 @@ function fillValidForm() {
 
 afterEach(() => {
   cleanup()
+  vi.restoreAllMocks()
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
 })
@@ -74,16 +75,28 @@ describe('FeedbackForm', () => {
     expect(alerts.length).toBe(3)
   })
 
-  it('auto-populates the device read-out without asking for input', () => {
+  it('captures the device into the payload without displaying it', async () => {
+    vi.stubEnv('VITE_FEEDBACK_ENDPOINT', 'https://script.google.com/macros/s/TEST/exec')
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    vi.stubGlobal('fetch', fetchMock)
     renderForm()
-    const device = container.querySelector('.feedback-device output') as HTMLElement
-    expect(device.textContent).toBe(captureDevice())
+
+    expect(container.querySelector('.feedback-device')).toBeNull()
+
+    fillValidForm()
+    await submit()
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [, options] = fetchMock.mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse(options.body as string)
+    expect(body.device).toBe(captureDevice())
   })
 
   it('submits the expected payload and shows a success state', async () => {
     vi.stubEnv('VITE_FEEDBACK_ENDPOINT', 'https://script.google.com/macros/s/TEST/exec')
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 })
     vi.stubGlobal('fetch', fetchMock)
+    const toISOStringSpy = vi.spyOn(Date.prototype, 'toISOString').mockReturnValue('2026-08-02T12:30:00.000Z')
     renderForm()
 
     fillValidForm()
@@ -101,7 +114,9 @@ describe('FeedbackForm', () => {
       total_time_sec: 330,
       escape_sec: 270,
       completed_at_iso: '2026-08-02T12:05:30.000Z',
+      submitted_at_iso: '2026-08-02T12:30:00.000Z',
     })
+    expect(toISOStringSpy).toHaveBeenCalled()
     expect(container.textContent).toContain('THANK YOU')
   })
 
@@ -116,12 +131,18 @@ describe('FeedbackForm', () => {
     expect(container.textContent).toContain('Network error')
   })
 
-  it('shows an error state when no endpoint is configured', async () => {
+  it('submits to the baked-in default endpoint when no env var is set', async () => {
+    vi.stubEnv('VITE_FEEDBACK_ENDPOINT', '')
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    vi.stubGlobal('fetch', fetchMock)
     renderForm()
 
     fillValidForm()
     await submit()
 
-    expect(container.textContent).toContain('not configured')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe(DEFAULT_FEEDBACK_ENDPOINT)
+    expect(container.textContent).toContain('THANK YOU')
   })
 })

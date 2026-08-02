@@ -42,6 +42,7 @@ export default function FeedbackForm({ totalTimeSec, escapeSec, completedAtIso }
     total_time_sec: totalTimeSec,
     escape_sec: escapeSec,
     completed_at_iso: completedAtIso,
+    submitted_at_iso: new Date().toISOString(),
   })
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -101,10 +102,6 @@ export default function FeedbackForm({ totalTimeSec, escapeSec, completedAtIso }
         />
         {attempted && errors.feedback && <em role="alert">{errors.feedback}</em>}
       </label>
-      <p className="feedback-device">
-        <span>Device</span>
-        <output>{device}</output>
-      </p>
       {status === 'error' && (
         <p className="feedback-error" role="alert">{errorMessage}</p>
       )}

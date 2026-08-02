@@ -75,10 +75,21 @@ describe('FeedbackForm', () => {
     expect(alerts.length).toBe(3)
   })
 
-  it('auto-populates the device read-out without asking for input', () => {
+  it('captures the device into the payload without displaying it', async () => {
+    vi.stubEnv('VITE_FEEDBACK_ENDPOINT', 'https://script.google.com/macros/s/TEST/exec')
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    vi.stubGlobal('fetch', fetchMock)
     renderForm()
-    const device = container.querySelector('.feedback-device output') as HTMLElement
-    expect(device.textContent).toBe(captureDevice())
+
+    expect(container.querySelector('.feedback-device')).toBeNull()
+
+    fillValidForm()
+    await submit()
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [, options] = fetchMock.mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse(options.body as string)
+    expect(body.device).toBe(captureDevice())
   })
 
   it('submits the expected payload and shows a success state', async () => {

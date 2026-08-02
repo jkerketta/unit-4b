@@ -102,10 +102,6 @@ export default function FeedbackForm({ totalTimeSec, escapeSec, completedAtIso }
         />
         {attempted && errors.feedback && <em role="alert">{errors.feedback}</em>}
       </label>
-      <p className="feedback-device">
-        <span>Device</span>
-        <output>{device}</output>
-      </p>
       {status === 'error' && (
         <p className="feedback-error" role="alert">{errorMessage}</p>
       )}

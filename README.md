@@ -152,7 +152,7 @@ Audio assets and their generation details are documented in [`public/audio/ATTRI
 
 ## Contributing
 
-Unit 4B is a private project. For fixes and ideas, open a PR against `main`:
+Unit 4B is a short PSX-style horror game built with Vite and React Three Fiber, and it is open for community contributions. Pull requests target `main`:
 
 1. Branch from `main`.
 2. Write tests for logic changes (`npm test`).
@@ -162,4 +162,6 @@ Commit messages follow conventional commits (`feat:`, `fix:`, `ui:`, `test:`).
 
 ## License
 
-The project source carries no license file; all rights reserved. Third-party assets ship under their own licenses, credited in Attribution.
+Released under the MIT License. See the LICENSE file.
+
+Copyright (c) 2026 jkerketta

@@ -1,5 +1,7 @@
 # Unit 4B
 
+<img width="2556" height="1324" alt="image" src="https://github.com/user-attachments/assets/2cd3e864-c6da-4b44-b51d-7d8fb0645ac0" />
+
 A short first-person horror game with an original PlayStation (PSX) aesthetic: you move into a cheap apartment, a hidden room under the living-room rug hints the previous tenant never left, and the chase begins.
 
 Unit 4B is a Vite + React + TypeScript app built on Three.js through React Three Fiber (R3F) and Drei, with Zustand state, Howler audio, the browser Web Speech API, and Vitest tests. It runs entirely in the browser with no backend of its own and takes roughly 5-9 minutes to finish.

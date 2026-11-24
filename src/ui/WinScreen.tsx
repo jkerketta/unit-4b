@@ -1,3 +1,4 @@
+import { sfxHover, sfxSelect } from '../systems/audio/uiSfx'
 import { useEffect, useRef, useState } from 'react'
 import { useGameStore } from '../game/store'
 import { useUIStore } from './subtitles'
@@ -23,15 +24,17 @@ export default function WinScreen() {
 
   return (
     <div className="end-screen win-screen">
+      <p className="end-kicker">LEASE BROKEN · DEPOSIT FORFEITED</p>
       <h1>YOU MADE IT OUT.</h1>
-      <p>Unit 4B — thanks for playing</p>
+      <p>Behind you, Unit 4B is already being listed again.</p>
+      <p className="end-tip">Thanks for playing.</p>
       <p>{elapsed}s</p>
       <p className="feedback-times">
         <span>Total time {formatTime(totalTimeSec)}</span>
         <span>Escape {formatTime(escapeSec)}</span>
       </p>
       <FeedbackForm totalTimeSec={totalTimeSec} escapeSec={escapeSec} completedAtIso={completedAtIso} />
-      <button onClick={() => {
+      <button onMouseEnter={sfxHover} onMouseDown={sfxSelect} onClick={() => {
         const s = useGameStore.getState()
         s.resetGame()
         useUIStore.getState().resetTransient()

@@ -11,5 +11,10 @@ export default function Subtitles() {
   }, [])
 
   if (!subtitle || Date.now() >= subtitle.until) return null
-  return <div className="subtitles">{subtitle.line}</div>
+  const match = subtitle.line.match(/^\[([^\]]+)\]\s*(.*)$/)
+  return (
+    <div key={subtitle.line} className="subtitles">
+      {match ? <><span className="speaker">{match[1]}</span>{match[2]}</> : subtitle.line}
+    </div>
+  )
 }

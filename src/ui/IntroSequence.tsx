@@ -1,17 +1,19 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useGameStore } from '../game/store'
 import { audio } from '../systems/audio/AudioManager'
+import { sfxBlip } from '../systems/audio/uiSfx'
 import { suppressUnlockPause } from '../systems/player/pauseGate'
 import { useUIStore } from './subtitles'
 
 const SCRIPTS = {
   initial: [
-    ['LANDLORD', 'Paperwork is done. I had your boxes moved in already.'],
-    ['LANDLORD', 'Here. Unit 4B. Your key.'],
-    ['YOU', 'The price is unusually good for this much space.'],
-    ['LANDLORD', 'Old building. Settles strangely. That keeps people away.'],
+    ['LANDLORD', 'Paperwork is signed. I had your boxes carried up already.'],
+    ['LANDLORD', 'Here. Unit 4B. Your key... it runs a little cold. Old brass.'],
+    ['YOU', 'The rent is unusually good for this much space.'],
+    ['LANDLORD', 'Old building. Settles strangely at night. That keeps people away.'],
     ['YOU', 'Is there anything else I should know?'],
     ['LANDLORD', 'The supplied floor plan is all you need. Nothing beyond it concerns you.'],
+    ['LANDLORD', 'And keep the rug where it is. It came with the unit.'],
   ],
   followup: [
     ['YOU', 'Before I go in — how long has 4B been empty?'],
@@ -34,11 +36,39 @@ function endDialogue(): void {
   useUIStore.getState().setIntroScript(null)
 }
 
+const CHAR_MS = 26
+
 export default function IntroSequence() {
   const step = useUIStore((state) => state.introStep)
   const script = useUIStore((state) => state.introScript)
   const phase = useGameStore((state) => state.phase)
   const lines = script ? SCRIPTS[script] : null
+  const [shown, setShown] = useState(0)
+  const typingRef = useRef(false)
+  const fullLine = lines && step !== null ? lines[step][1] : ''
+  const speaker = lines && step !== null ? lines[step][0] : ''
+
+  // Typewriter reveal with per-speaker voice blips.
+  useEffect(() => {
+    setShown(0)
+    if (!fullLine) return
+    typingRef.current = true
+    let i = 0
+    const id = window.setInterval(() => {
+      i += 1
+      setShown(i)
+      const ch = fullLine[i - 1]
+      if (ch && /[a-z0-9]/i.test(ch) && i % 2 === 0) sfxBlip(speaker)
+      if (i >= fullLine.length) {
+        typingRef.current = false
+        window.clearInterval(id)
+      }
+    }, CHAR_MS)
+    return () => {
+      window.clearInterval(id)
+      typingRef.current = false
+    }
+  }, [fullLine, speaker, step])
 
   const finish = () => {
     playUiClick()
@@ -48,6 +78,12 @@ export default function IntroSequence() {
     const current = useUIStore.getState().introStep
     const active = useUIStore.getState().introScript
     if (current === null || !active) return
+    if (typingRef.current) {
+      // First press completes the line instead of skipping it.
+      typingRef.current = false
+      setShown(Number.MAX_SAFE_INTEGER)
+      return
+    }
     playUiClick()
     if (current >= SCRIPTS[active].length - 1) {
       endDialogue()
@@ -82,13 +118,23 @@ export default function IntroSequence() {
       ? 'Thanks'
       : 'Continue'
 
+  const done = shown >= fullLine.length
   return (
     <div className="intro-dialogue">
-      <div>
-        <strong>{lines[step][0]}</strong>
-        <p>{lines[step][1]}</p>
-        <button autoFocus onClick={next}>{continueLabel}</button>
+      <div className={`dialogue-box speaker-${speaker.toLowerCase()}`}>
+        <div className="dialogue-head">
+          <strong>{speaker}</strong>
+          <span className="dialogue-progress">
+            {lines.map((_, i) => <i key={i} className={i <= step ? 'on' : ''} />)}
+          </span>
+        </div>
+        <p>
+          {fullLine.slice(0, shown)}
+          <span className={`dialogue-caret${done ? ' idle' : ''}`}>▍</span>
+        </p>
+        <button autoFocus onClick={next}>{done ? continueLabel : '…'}</button>
         <button onClick={finish}>Skip conversation</button>
+        <span className="dialogue-hint">[E] / [SPACE] continue · [ESC] skip</span>
       </div>
     </div>
   )

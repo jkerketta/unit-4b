@@ -47,7 +47,7 @@ export default function Hatch() {
       advanceObjective('hatch')
       store.setPlayerPosition([playerRig.position.x, playerRig.position.y, playerRig.position.z])
       store.saveCheckpoint(playerRig.yaw)
-      say("Cold air. There's a room down there.")
+      say("Cold air... and something sweet. There's a room down there.")
     },
   })
   useFrame((_, dt) => {

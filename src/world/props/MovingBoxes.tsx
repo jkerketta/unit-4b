@@ -165,7 +165,7 @@ function HeavyBox() {
     onInteract: () => {
       useGameStore.getState().setFlag('boxMoved', true)
       audio.play('box', { volume: 0.75, rate: 0.78 })
-      say('Heavy. What was it covering?')
+      say('Heavy. Too heavy for books. What was it covering?')
     },
   })
   useFrame((_, dt) => {

@@ -1,3 +1,4 @@
+import { sfxHover, sfxSelect } from '../systems/audio/uiSfx'
 import { useEffect, useState } from 'react'
 import { useGameStore } from '../game/store'
 import { suppressUnlockPause } from '../systems/player/pauseGate'
@@ -58,14 +59,14 @@ export default function PauseMenu() {
             <p>WASD / MOUSE — MOVE / LOOK</p>
             <p>SHIFT — RUN · E — INTERACT</p>
             <p>ESC — PAUSE / RESUME</p>
-            <button onClick={() => setControls(false)}>Back</button>
+            <button onMouseEnter={sfxHover} onFocus={sfxHover} onMouseDown={sfxSelect} onClick={() => setControls(false)}>Back</button>
           </div>
         ) : (
           <nav>
-            <button autoFocus onClick={resume}>Resume</button>
-            <button onClick={() => setControls(true)}>Controls</button>
-            {useGameStore.getState().checkpoint && <button onClick={restart}>Restart checkpoint</button>}
-            <button onClick={() => {
+            <button autoFocus onMouseEnter={sfxHover} onFocus={sfxHover} onMouseDown={sfxSelect} onClick={resume}>Resume</button>
+            <button onMouseEnter={sfxHover} onFocus={sfxHover} onMouseDown={sfxSelect} onClick={() => setControls(true)}>Controls</button>
+            {useGameStore.getState().checkpoint && <button onMouseEnter={sfxHover} onFocus={sfxHover} onMouseDown={sfxSelect} onClick={restart}>Restart checkpoint</button>}
+            <button onMouseEnter={sfxHover} onFocus={sfxHover} onMouseDown={sfxSelect} onClick={() => {
               setControls(false)
               useUIStore.getState().resetTransient()
               useGameStore.getState().resetGame()

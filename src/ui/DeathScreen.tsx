@@ -1,3 +1,4 @@
+import { sfxHover, sfxSelect } from '../systems/audio/uiSfx'
 import { useGameStore } from '../game/store'
 import { useUIStore } from './subtitles'
 
@@ -8,14 +9,16 @@ export default function DeathScreen() {
 
   return (
     <div className="end-screen death-screen">
-      <h1>IT FOUND YOU</h1>
-      <p>You should have stayed beneath the floor.</p>
+      <p className="end-kicker">TENANCY TERMINATED · 02:13</p>
+      <h1 data-text="IT FOUND YOU">IT FOUND YOU</h1>
+      <p>It heard you long before it saw you.</p>
+      <p className="end-tip">Tip: walking is quieter than running. Hide where it can't follow.</p>
       <div>
-        <button onClick={() => {
+        <button onMouseEnter={sfxHover} onMouseDown={sfxSelect} onClick={() => {
           useUIStore.getState().resetTransient()
           useGameStore.getState().restoreCheckpoint()
         }}>Retry</button>
-        <button onClick={() => {
+        <button onMouseEnter={sfxHover} onMouseDown={sfxSelect} onClick={() => {
           useUIStore.getState().resetTransient()
           useGameStore.getState().resetGame()
         }}>Title</button>

@@ -27,6 +27,8 @@ export default function HUD() {
   const unobstructed = !paused && !document && introStep === null && !wakeCutscene
   return (
     <div className="hud">
+      <div className="film-grain" />
+      {phase === 'chase' && !paused && <div className="chase-vignette" />}
       {playing && unobstructed && <ObjectiveCard />}
       {playing && unobstructed && <InteractPrompt />}
       {playing && !paused && !document && introStep === null && <Subtitles />}

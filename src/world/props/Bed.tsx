@@ -54,7 +54,7 @@ export default function Bed() {
         hidePosition: UNDER,
         exitPosition: EXIT,
         eyeHeight: 0.18,
-        enterLine: 'Stay quiet.',
+        enterLine: 'Under the bed. Breathe through your nose. Stay quiet.',
         watchedLine: 'It saw me dive under. Stay still.',
         exitLabel: 'Get out from under the bed',
       }, watched)

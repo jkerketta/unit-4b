@@ -77,13 +77,7 @@ export default function Apartment() {
       </mesh>
 
       <ambientLight intensity={phase === 'title' ? 0.1 : 0.48} color="#b8aa94" />
-      <pointLight
-        position={[0, 2.5, 3.1]}
-        intensity={phase === 'title' ? 0.8 : 7}
-        distance={12}
-        decay={2}
-        color="#ffd9a0"
-      />
+      <MainLight base={phase === 'title' ? 0.8 : 7} />
       <pointLight position={[7.5, 2.55, -2.6]} intensity={phase === 'title' ? 0.8 : 4.5} distance={9} decay={2} color="#b9d2e5" />
       <pointLight position={[1.25, 2.2, -4]} intensity={phase === 'title' ? 0.5 : 3.2} distance={7} decay={2} color="#e7bd91" />
       <pointLight position={[-2, 1.7, 3.8]} intensity={phase === 'title' ? 0.4 : 2.4} distance={5} color="#ffc77d" />
@@ -103,4 +97,29 @@ function BathroomLight({ enabled }: { enabled: boolean }) {
       : 0.25
   })
   return <pointLight ref={light} position={[-1.875, 2.55, -3.75]} distance={5.5} decay={2} color="#b9d5dc" />
+}
+
+const CALM_COLOR = new THREE.Color('#ffd9a0')
+const CHASE_COLOR = new THREE.Color('#ff7a5c')
+
+/** Living-room light: steady normally, stutters and reddens during the chase. */
+function MainLight({ base }: { base: number }) {
+  const light = useRef<THREE.PointLight>(null)
+  const dropout = useRef(0)
+  useFrame(({ clock }, delta) => {
+    const state = useGameStore.getState()
+    if (state.paused || !light.current) return
+    if (state.phase !== 'chase') {
+      light.current.intensity = base
+      light.current.color.copy(CALM_COLOR)
+      return
+    }
+    const t = clock.elapsedTime
+    if (dropout.current > 0) dropout.current -= delta
+    else if (Math.random() < delta * 0.9) dropout.current = 0.05 + Math.random() * 0.18
+    const buzz = 0.82 + Math.sin(t * 47) * 0.08 + Math.sin(t * 3.1) * 0.1
+    light.current.intensity = dropout.current > 0 ? base * 0.08 : base * buzz
+    light.current.color.copy(CALM_COLOR).lerp(CHASE_COLOR, 0.45 + Math.sin(t * 1.7) * 0.15)
+  })
+  return <pointLight ref={light} position={[0, 2.5, 3.1]} intensity={base} distance={12} decay={2} color="#ffd9a0" />
 }

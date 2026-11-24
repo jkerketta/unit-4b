@@ -21,6 +21,7 @@ import Phone from '../world/props/Phone'
 import Furnishings from '../world/props/Furnishings'
 import FloorPlanPoster from '../world/props/FloorPlanPoster'
 import ExteriorLanding from '../world/ExteriorLanding'
+import DustMotes from '../world/DustMotes'
 
 function TitleDrift() {
   const { camera } = useThree()
@@ -44,6 +45,7 @@ export default function Scene() {
 
       <Apartment />
       <Furnishings />
+      <DustMotes />
       {phase === 'intro' && <ExteriorLanding />}
       {phase === 'title' ? <TitleDrift /> : <Runtime key={sessionId} />}
     </>

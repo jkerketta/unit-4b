@@ -39,12 +39,12 @@ export default function FrontDoor() {
         store.setPlayerPosition(INTERIOR_SPAWN)
         advanceObjective('enter')
         store.setPhase('calm')
-        say('Home. The boxes are already inside.')
+        say('Home. The boxes are already inside... I never told him which room.')
         window.setTimeout(() => setEntering(false), 1000)
         return
       }
       if (store.phase === 'calm') {
-        say('I just got here. Unpack first.')
+        say('I just got here. Unpack first. Running already would be ridiculous.')
         return
       }
       if (store.phase !== 'chase') return

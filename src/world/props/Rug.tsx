@@ -27,7 +27,7 @@ export default function Rug() {
     onInteract: () => {
       useGameStore.getState().setFlag('rugPulled', true)
       audio.play('rug')
-      say("A hatch. This isn't on the floor plan.")
+      say("A hatch. That's not on the floor plan. Scratch marks on the inside.")
       advanceObjective('rug')
     },
   })
@@ -39,7 +39,7 @@ export default function Rug() {
     if (!triggered.current && state.activeObjectiveId === 'rug' && !state.flags.boxMoved && Math.abs(dx) < 0.9 && Math.abs(dz) < 0.8) {
       triggered.current = true
       state.setFlag('rugNoticed', true)
-      say('The floor sounds... hollow.')
+      say('The floor sounds... hollow. Like something is holding its breath.')
     }
     if (ref.current) {
       ref.current.position.z = THREE.MathUtils.damp(ref.current.position.z, HATCH_POS[2] + (rugPulled ? 1.8 : 0), 6, dt)
